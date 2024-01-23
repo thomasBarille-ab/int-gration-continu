@@ -1,0 +1,43 @@
+name: model-training
+on:
+  push: {}
+permissions:
+  issues: write
+  contents: write
+jobs:
+  model_training_job:
+    name: Model Training
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Set up CML
+        uses: iterative/setup-cml@v1
+
+      - name: Train Model and Generate Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+          pip install --upgrade pip
+          python train.py
+          npm install -g @dvcorg/cml
+          echo "## Model metrics" > report.md
+          cat metrics.txt >> report.md
+          echo '![](./feature_importance.png "Feature Importance")' >> report.md
+          echo '![](./residuals.png "Residuals")' >> report.md
+          cml comment create report.md
